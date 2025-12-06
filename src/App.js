@@ -1,4 +1,4 @@
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Loader from "./Loader";
 import StarRating from "./StarRating";
 
@@ -26,28 +26,28 @@ import StarRating from "./StarRating";
 //   },
 // ];
 
-const tempWatchedData = [
-  {
-    imdbID: "tt1375666",
-    Title: "Inception",
-    Year: "2010",
-    Poster:
-      "https://m.media-amazon.com/images/M/MV5BMjAxMzY3NjcxNF5BMl5BanBnXkFtZTcwNTI5OTM0Mw@@._V1_SX300.jpg",
-    runtime: 148,
-    imdbRating: 8.8,
-    userRating: 10,
-  },
-  {
-    imdbID: "tt0088763",
-    Title: "Back to the Future",
-    Year: "1985",
-    Poster:
-      "https://m.media-amazon.com/images/M/MV5BZmU0M2Y1OGUtZjIxNi00ZjBkLTg1MjgtOWIyNThiZWIwYjRiXkEyXkFqcGdeQXVyMTQxNzMzNDI@._V1_SX300.jpg",
-    runtime: 116,
-    imdbRating: 8.5,
-    userRating: 9,
-  },
-];
+// const tempWatchedData = [
+//   {
+//     imdbID: "tt1375666",
+//     Title: "Inception",
+//     Year: "2010",
+//     Poster:
+//       "https://m.media-amazon.com/images/M/MV5BMjAxMzY3NjcxNF5BMl5BanBnXkFtZTcwNTI5OTM0Mw@@._V1_SX300.jpg",
+//     runtime: 148,
+//     imdbRating: 8.8,
+//     userRating: 10,
+//   },
+//   {
+//     imdbID: "tt0088763",
+//     Title: "Back to the Future",
+//     Year: "1985",
+//     Poster:
+//       "https://m.media-amazon.com/images/M/MV5BZmU0M2Y1OGUtZjIxNi00ZjBkLTg1MjgtOWIyNThiZWIwYjRiXkEyXkFqcGdeQXVyMTQxNzMzNDI@._V1_SX300.jpg",
+//     runtime: 116,
+//     imdbRating: 8.5,
+//     userRating: 9,
+//   },
+// ];
 
 const average = (arr) =>
   arr.reduce(
@@ -64,15 +64,27 @@ export default function App() {
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState("");
 
+  // ... existing code ...
   useEffect(
     function () {
+      const timerId = setTimeout(() => setQuery(query), 500);
+      return () => clearTimeout(timerId); // Cleanup function
+    },
+    [query]
+  );
+  // ... existing code ...
+
+  useEffect(
+    function () {
+      const controller = new AbortController();
       setError("");
 
       query.length > 2 && setIsLoading(true);
       async function fetchData() {
         try {
           const data = await fetch(
-            `http://www.omdbapi.com/?i=tt3896198&apikey=${API_key}&s=${query}`
+            `http://www.omdbapi.com/?i=tt3896198&apikey=${API_key}&s=${query}`,
+            { signal: controller.signal }
           );
           if (!data.ok) {
             throw new Error("Something went wrong");
@@ -97,8 +109,11 @@ export default function App() {
           return;
         }
       }
-
+      handleMovieClose();
       fetchData();
+      return function () {
+        controller.abort();
+      };
     },
     [query]
   );
@@ -108,6 +123,7 @@ export default function App() {
   }
   function handleMovieClose() {
     setSelectedId(null);
+    // document.title = "UsePopcorn";
   }
 
   function handleWatchedMovies(newMovie) {
@@ -269,6 +285,35 @@ function MovieDetails({ handleMovieClose, id, handleWatchedMovies, watched }) {
 
     fetchDetails();
   }, [id]);
+
+  useEffect(
+    function () {
+      document.title = `Movie ${movies.Title}`;
+
+      return function () {
+        document.title = "usePopcorn";
+      }; //Cleanup function
+    },
+    [movies.Title]
+  );
+
+  //Key Press Effect
+
+  useEffect(
+    function () {
+      function KeyListner(e) {
+        if (e.code === "Escape") {
+          handleMovieClose();
+        }
+      }
+      document.addEventListener("keydown", KeyListner);
+
+      return function () {
+        document.removeEventListener("keydown", KeyListner);
+      };
+    },
+    [handleMovieClose]
+  );
 
   const isWatched = watched.filter((movie) => movie.imdbID === id).length > 0;
   // console.log("watched Status : ", isWatched);
