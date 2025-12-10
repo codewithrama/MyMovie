@@ -353,6 +353,14 @@ function MovieDetails({ handleMovieClose, id, handleWatchedMovies, watched }) {
 
   const currentMovie = watched.filter((mov) => mov.imdbID === id);
   // console.log(" Selected  movie", currentMovie);
+  let countDecisions = useRef(0);
+
+  useEffect(
+    function () {
+      rating ? countDecisions.current++ : (countDecisions.current = 0);
+    },
+    [rating]
+  );
 
   function handleAdd() {
     setIsLoading(true);
@@ -366,10 +374,13 @@ function MovieDetails({ handleMovieClose, id, handleWatchedMovies, watched }) {
         movies.Runtime === "N/A"
           ? Number(0)
           : Number(movies.Runtime.split(" ").at(0)),
+      decisionCount: countDecisions.current,
     };
+
+    console.log(newMovie);
+
     handleWatchedMovies(newMovie);
     handleMovieClose();
-
     setIsLoading(false);
   }
   return loading ? (
