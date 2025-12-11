@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import Loader from "./Loader";
-import StarRating from "./StarRating";
+import StarRating from "./StarRating.jsx";
+import { useMovie } from "./Hooks/useMovie";
 
 // const tempMovieData = [
 //   {
@@ -57,15 +58,15 @@ const average = (arr) =>
 const API_key = "45170ebe";
 
 export default function App() {
-  const [movies, setMovies] = useState([]);
   const [watched, setWatched] = useState(function () {
     const storedMovie = localStorage.getItem("watched");
     return storedMovie ? JSON.parse(storedMovie) : [];
   });
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
+
   const [query, setQuery] = useState("");
+
   const [selectedId, setSelectedId] = useState("");
+  const { movies, isLoading, error } = useMovie(query);
 
   // ... existing code ...
   useEffect(
@@ -76,50 +77,6 @@ export default function App() {
     [query]
   );
   // ... existing code ...
-
-  useEffect(
-    function () {
-      const controller = new AbortController();
-      setError("");
-
-      query.length > 2 && setIsLoading(true);
-      async function fetchData() {
-        try {
-          const data = await fetch(
-            `http://www.omdbapi.com/?i=tt3896198&apikey=${API_key}&s=${query}`,
-            { signal: controller.signal }
-          );
-          if (!data.ok) {
-            throw new Error("Something went wrong");
-          }
-
-          const res = await data.json();
-
-          if (res.Response === "False") {
-            throw new Error(res.Error);
-          }
-
-          setMovies(res.Search);
-        } catch (err) {
-          console.error(err.message);
-          setError("uh oh movie not found ");
-        } finally {
-          setIsLoading(false);
-        }
-        if (query.length < 3) {
-          setError("");
-          setMovies([]);
-          return;
-        }
-      }
-      handleMovieClose();
-      fetchData();
-      return function () {
-        controller.abort();
-      };
-    },
-    [query]
-  );
 
   useEffect(
     function () {
@@ -352,7 +309,7 @@ function MovieDetails({ handleMovieClose, id, handleWatchedMovies, watched }) {
   // console.log("watched Status : ", isWatched);
 
   const currentMovie = watched.filter((mov) => mov.imdbID === id);
-  // console.log(" Selected  movie", currentMovie);
+  //useRef 2nd Use Case - persist variables betweeen renderers
   let countDecisions = useRef(0);
 
   useEffect(
